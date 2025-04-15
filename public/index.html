@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calendário Iterativo</title>
+    <style>
+      /* ...estilos básicos para o calendário... */
+      body {
+        font-family: Arial, sans-serif;
+      }
+      .calendar {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 10px;
+      }
+      .day {
+        border: 1px solid #ccc;
+        padding: 10px;
+        text-align: center;
+      }
+      .tasks {
+        margin-top: 10px;
+      }
+      .task button {
+        margin-left: 5px;
+        color: red;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Calendário Iterativo</h1>
+    <div class="calendar" id="calendar"></div>
+    <script>
+      const calendar = document.getElementById("calendar");
+      const daysInMonth = new Date().getDate();
+
+      // Delete a task
+      function deleteTask(day, index) {
+        fetch(`/tasks/${day}/${index}`, {
+          method: "DELETE",
+        }).then(() => {
+          const taskDiv = document.getElementById(`tasks-${day}`);
+          taskDiv.removeChild(taskDiv.children[index]);
+        });
+      }
+
+      for (let i = 1; i <= 31; i++) {
+        const dayDiv = document.createElement("div");
+        dayDiv.className = "day";
+        dayDiv.innerHTML = `<strong>${i}</strong><div class="tasks" id="tasks-${i}"></div>`;
+        dayDiv.onclick = () => {
+          const task = prompt("Digite a tarefa:");
+          if (task) {
+            fetch(`/tasks/${i}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ task }),
+            }).then(() => {
+              const taskDiv = document.createElement("div");
+              taskDiv.className = "task";
+              taskDiv.innerHTML = `${task} <button onclick="deleteTask(${i}, ${
+                document.getElementById(`tasks-${i}`).children.length
+              })">X</button>`;
+              document.getElementById(`tasks-${i}`).appendChild(taskDiv);
+            });
+          }
+        };
+        calendar.appendChild(dayDiv);
+      }
+    </script>
+  </body>
+</html>

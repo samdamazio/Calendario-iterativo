@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calendário Interativo</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+      }
+      .calendar {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 10px;
+        max-width: 600px;
+        margin: 20px auto;
+      }
+      .day {
+        border: 1px solid #ccc;
+        padding: 10px;
+        cursor: pointer;
+      }
+      .day:hover {
+        background-color: #f0f0f0;
+      }
+      .day.selected {
+        background-color: #d0f0d0;
+        border-color: #4caf50;
+      }
+      .tasks {
+        margin-top: 20px;
+      }
+      .task {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .task button {
+        background: none;
+        border: none;
+        color: red;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Calendário Interativo</h1>
+    <div class="calendar" id="calendar"></div>
+    <div class="tasks" id="tasks">
+      <h2>Tarefas</h2>
+      <ul id="task-list"></ul>
+      <input type="text" id="task-input" placeholder="Nova tarefa" />
+      <button id="add-task">Adicionar</button>
+    </div>
+    <script>
+      const calendar = document.getElementById("calendar");
+      const taskList = document.getElementById("task-list");
+      const taskInput = document.getElementById("task-input");
+      const addTaskButton = document.getElementById("add-task");
+      let selectedDate = null;
+
+      // Render calendar days
+      function renderCalendar() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth();
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        calendar.innerHTML = "";
+        for (let i = 0; i < firstDay; i++) {
+          calendar.innerHTML += `<div></div>`;
+        }
+        for (let day = 1; day <= daysInMonth; day++) {
+          const date = `${year}-${String(month + 1).padStart(2, "0")}-${String(
+            day
+          ).padStart(2, "0")}`;
+          calendar.innerHTML += `<div class="day" data-date="${date}">${day}</div>`;
+        }
+      }
+
+      // Fetch tasks for a specific date
+      function fetchTasks(date) {
+        fetch(`http://localhost:3000/tasks/${date}`)
+          .then((response) => response.json())
+          .then((tasks) => {
+            taskList.innerHTML = "";
+            tasks.forEach((task, index) => {
+              const li = document.createElement("li");
+              li.className = "task";
+              li.innerHTML = `${task} <button onclick="deleteTask('${date}', ${index})">X</button>`;
+              taskList.appendChild(li);
+            });
+          });
+      }
+
+      // Add a new task
+      function addTask(date, task) {
+        fetch(`http://localhost:3000/tasks/${date}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ task }),
+        }).then(() => fetchTasks(date));
+      }
+
+      // Delete a task
+      function deleteTask(date, index) {
+        fetch(`http://localhost:3000/tasks/${date}/${index}`, {
+          method: "DELETE",
+        }).then(() => fetchTasks(date));
+      }
+
+      // Event listeners
+      calendar.addEventListener("click", (e) => {
+        if (e.target.classList.contains("day")) {
+          document
+            .querySelectorAll(".day")
+            .forEach((day) => day.classList.remove("selected"));
+          e.target.classList.add("selected");
+          selectedDate = e.target.dataset.date;
+          fetchTasks(selectedDate);
+        }
+      });
+
+      addTaskButton.addEventListener("click", () => {
+        if (selectedDate && taskInput.value) {
+          addTask(selectedDate, taskInput.value);
+          taskInput.value = "";
+        }
+      });
+
+      renderCalendar();
+    </script>
+  </body>
+</html>
